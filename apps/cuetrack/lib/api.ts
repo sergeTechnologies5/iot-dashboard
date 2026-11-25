@@ -48,6 +48,8 @@ const CT = '/api/v1/cuetrack';
 export const api = {
   login: (username: string, password: string) =>
     request<{ token: string }>('POST', '/api/v1/auth/authenticate', { username, password }),
+  forgotPassword: (email: string) =>
+    request<{ message: string }>('POST', '/api/v1/auth/forgot-password', { email }),
   get: <T>(path: string) => request<T>('GET', CT + path),
   post: <T>(path: string, body: unknown = {}) => request<T>('POST', CT + path, body),
   put: <T>(path: string, body: unknown) => request<T>('PUT', CT + path, body),
