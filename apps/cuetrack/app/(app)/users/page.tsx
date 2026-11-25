@@ -5,15 +5,16 @@ import { useStore } from '@/context/Store';
 import type { Role, User } from '@/lib/types';
 import { ROLE_LABEL } from '@/lib/types';
 import { Avatar, StatusPill } from '@/components/ui';
-import { Modal } from '@/components/overlays';
+import { Confirm, Modal } from '@/components/overlays';
 import { Icon } from '@/components/Icon';
 import { InviteDialog } from '@/components/InviteDialog';
 import { EditUserDialog } from '@/components/EditUserDialog';
 
 export default function UsersPage() {
-  const { user, users, allUsers, companies, can, companyName, inviteUser, setAssignments, updateUser, resetUserPassword } = useStore();
+  const { user, users, allUsers, companies, can, companyName, inviteUser, setAssignments, updateUser, resetUserPassword, deleteUser } = useStore();
   const [assigning, setAssigning] = useState<User | null>(null);
   const [editing, setEditing] = useState<User | null>(null);
+  const [deleting, setDeleting] = useState<User | null>(null);
   const [inviting, setInviting] = useState(false);
   const [roleFilter, setRoleFilter] = useState<'ALL' | Role>('ALL');
 
@@ -81,6 +82,9 @@ export default function UsersPage() {
                     {canEdit(u) && (
                       <button className="btn btn-sm" style={{ marginLeft: 6 }} onClick={() => setEditing(u)} id={`edit-${u.id}`}><Icon name="settings" size={14} /> Edit</button>
                     )}
+                    {canEdit(u) && u.id !== user.id && (
+                      <button className="btn btn-sm btn-danger" style={{ marginLeft: 6 }} onClick={() => setDeleting(u)} id={`delete-${u.id}`} title="Delete user"><Icon name="trash" size={14} /></button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -98,6 +102,19 @@ export default function UsersPage() {
           onClose={() => setEditing(null)}
           onSave={(input) => updateUser(editing.id, input)}
           onResetPassword={editing.id === user.id ? undefined : () => resetUserPassword(editing.id)}
+        />
+      )}
+      {deleting && (
+        <Confirm
+          title="Delete user?"
+          danger
+          confirmLabel="Delete user"
+          body={<>
+            <b>{deleting.name}</b> ({deleting.email}) will be permanently removed and can no longer sign in.
+            {deleting.role === 'COMPANY_ADMIN' && deleting.assigned.length > 0 && <> Their {deleting.assigned.length} billiard{deleting.assigned.length === 1 ? '' : 's'} will become unassigned.</>}
+          </>}
+          onConfirm={() => { void deleteUser(deleting.id); }}
+          onClose={() => setDeleting(null)}
         />
       )}
       {inviting && (

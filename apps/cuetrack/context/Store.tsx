@@ -107,6 +107,7 @@ interface Store {
   updateUser: (userId: string, input: { name: string; email: string; role?: User['role'] }) => Promise<boolean>;
   /** Issue a new one-time password for someone you manage. */
   resetUserPassword: (userId: string) => Promise<InviteCredentials | null>;
+  deleteUser: (userId: string) => Promise<boolean>;
   // payment channels
   catalog: ChannelCatalogEntry[];
   /** Channels for a company: one entry per channel available in its country (NOT_REQUESTED filled in). */
@@ -1056,6 +1057,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [fail],
   );
 
+  const deleteUser = useCallback(
+    async (targetId: string): Promise<boolean> => {
+      const gone = allUsers.find((u) => u.id === targetId);
+      if (API) {
+        try {
+          await api.del<void>(`/users/${targetId}`);
+          const bs = await api.get<Billiard[]>('/billiards'); // their billiards are now unassigned
+          setBilliards(bs.map(normBilliard));
+        } catch (e) {
+          fail('Could not delete user')(e);
+          return false;
+        }
+      }
+      setAllUsers((x) => x.filter((u) => u.id !== targetId));
+      toast({ tone: 'success', title: 'User deleted', detail: gone?.email });
+      return true;
+    },
+    [allUsers, toast, fail],
+  );
+
   const setAssignments = useCallback(
     (targetId: string, ids: string[]) => {
       const done = () => toast({ tone: 'success', title: 'Assignments updated', detail: `${ids.length} billiard${ids.length === 1 ? '' : 's'} assigned` });
@@ -1533,6 +1554,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setAssignments,
     updateUser,
     resetUserPassword,
+    deleteUser,
     catalog,
     channelsOf,
     activeChannelsOf,
